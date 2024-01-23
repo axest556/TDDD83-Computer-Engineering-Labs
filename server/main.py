@@ -3,6 +3,7 @@ from flask import abort
 from flask import Flask
 from flask import jsonify
 from flask_sqlalchemy import SQLAlchemy
+from flask import request
 
 
 app = Flask(__name__)
@@ -27,28 +28,45 @@ class Car(db.Model):
     def serialize(self):
         return dict(id=self.id, make=self.make, model=self.model)
 
-@app.route('/cars')
+@app.route('/cars', methods=['GET', 'POST'])
 def cars():
-    all_cars = Car.query.all()
-    car_list = [car.serialize() for car in all_cars]
-    return jsonify(car_list)
+  if request.method == 'GET':
+        all_cars = Car.query.all()
+        car_list = [car.serialize() for car in all_cars]
+        return jsonify(car_list)
+  elif request.method == 'POST':
+        data = request.get_json()  # Get data from request body
 
+        new_car = Car(make=data['make'], model=data['model'])
+        db.session.add(new_car)
+        db.session.commit()
 
-@app.route('/cars/<int:car_id>')    
-#def show_car(car_id):
-    #if car_id not in [1,2]:
-     #   abort(404)
-    #return  jsonify (car_list[car_id-1])
+        return jsonify(new_car.serialize()), 201  
 
-def show_car(car_id):
-    car = Car.query.get(car_id)  # Försök att hämta bilen med det angivna ID:t
+@app.route('/cars/<int:car_id>', methods=['GET', 'PUT', 'DELETE'])    
+def handle_car(car_id):
+    car = Car.query.get(car_id)
     if car is None:
-        abort(404)  # Om bilen inte finns, returnera 404
-    return jsonify(car.serialize())  # Om bilen finns,   
+        abort(404)  
+    
+    if request.method == 'GET':   
+        return jsonify(car.serialize())  
+    elif request.method == "PUT":
+        data = request.get_json()
+
+        if 'make' in data:
+            car.make = data['make']
+        if 'model' in data:
+            car.model = data['model']
+
+        db.session.commit()
+        return jsonify(car.serialize()), 200
+    elif request.method == 'DELETE':
+        db.session.delete(car)
+        db.session.commit()
+        return '', 200  
 
 # Lab 1 ovan
-
-
 
 if __name__ == "__main__":
     app.run(port=5002, debug=True) # På MacOS, byt till 5001 eller dylikt
