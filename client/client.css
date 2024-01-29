@@ -1,9 +1,35 @@
-#opening_times_sub {
-    color: green;
+#sub {
+    color: rgb(29, 55, 76);
 }
 
-#hhh {
+#leftbox {
+    position: absolute;
+    margin-right: 100px;
+    margin-left: 200px;
     width: 250px;
-    border: 5px solid green;
-    background-color: lightyellow;
+    border: 5px solid rgb(29, 55, 76);
+    background-color: rgb(236, 247, 255);
+    margin-top: 50px;
+}
+
+#header {
+    color: black;
+    font-weight: bold;
+}
+
+#left {
+    width: 50%;
+    margin-left: 0px;
+    margin-right: 0px;
+}
+
+#right {
+    width: 50%;
+    margin-right: 0px;
+    margin-top: 70px;
+}
+
+.form-group {
+    width: 500px;
+    margin-top: 0px;
 }
