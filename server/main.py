@@ -1,15 +1,20 @@
 #!/usr/bin/env python3
 from flask import abort, Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
+from flask_bcrypt import Bcrypt
+
 
 app = Flask(__name__, static_folder='../client', static_url_path='/')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
+bcrypt = Bcrypt(app)
 
 @app.route("/")
 def client():
     return app.send_static_file("client.html")
+
+
 
 class Car(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -34,6 +39,7 @@ class User(db.Model):
     name = db.Column(db.String, nullable=False)
     email = db.Column(db.String, nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
+    password_hash = db.Column(db.String, nullable=False)
     cars = db.relationship('Car', backref='user', lazy=True)
 
     def __repr__(self):
@@ -46,6 +52,9 @@ class User(db.Model):
             'email': self.email,
             'is_admin': self.is_admin
         }
+    
+    def set_password(self, password):
+        self.password_hash = bcrypt.generate_password_hash(password).decode('utf8')
 
 @app.route('/cars', methods=['GET', 'POST'])
 def cars():
@@ -124,6 +133,21 @@ def get_cars(user_id):
     if user is None:
         abort(404)
     return jsonify([car.serialize() for car in user.cars])
+
+@app.route('/sign-up', methods=['POST'])
+def signup():
+    data = request.get_json()
+
+    new_user = User(name=data['name'], email=data['email'])
+
+    password = data['password']
+
+    password_hash = new_user.set_password(password)
+
+    db.session.add(new_user)
+    db.session.commit()
+    return jsonify({'message': 'User created successfully'}), 201
+
 
 if __name__ == "__main__":
     app.run(port=5002, debug=True)
