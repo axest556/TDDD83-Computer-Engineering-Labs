@@ -1,15 +1,13 @@
-//client.js
 
 var host = window.location.protocol + '//' + location.host
 
 function loaded() {
-    $(".container-fluid").html($("#view-home").html())
+    $(".container-fluid").html($("#view-home").html());
     alert("Sidan laddades");
 }
 
-
 function showCarPage() {
-    $(".container-fluid").html($("#view-cars").html())
+    $(".container-fluid").html($("#view-cars").html());
     present_cars();
 }
 
@@ -17,13 +15,12 @@ function editCar(id) {
     $("#exampleModalCenter").modal();
 
     $.get(host + '/cars/' + id, function(car) {
-        // cars innehåller nu den JSON-data som servern svarar med på /cars
         $("#car_id").val(car.id);
         $("#make-input").val(car.make);
         $("#model-input").val(car.model);
-        $("#customer_id-input").val(car.customer.id);
-     });
-   
+        // Updated to use 'user.id' instead of 'customer.id'
+        $("#customer_id-input").val(car.user ? car.user.id : '');
+    });
 }
 
 function save() {
@@ -32,26 +29,25 @@ function save() {
     const id = Math.floor(document.getElementById('car_id').value);
     const make = document.getElementById('make-input').value;
     const model = document.getElementById('model-input').value;
-    const customer_id = Math.floor(document.getElementById('customer_id-input').value);
+    // Updated to reflect the model change
+    const user_id = Math.floor(document.getElementById('customer_id-input').value);
     
     const data = {
-        make : make,
-        model : model,
-        customer_id : customer_id// Ensure this matches your backend logic, might need to be just `customer` depending on how your Flask app is set up
+        make: make,
+        model: model,
+        user_id: user_id // Reflecting the backend expectation
     };
 
     $.ajax({
         url: host + '/cars/' + id,
-        type: 'PUT', // eller 'PUT', 'POST' eller 'DELETE'
+        type: 'PUT',
         contentType: 'application/json',
         data: JSON.stringify(data),
         success: function(response) {
-           // cars innehåller nu den JSON-data som servern svarar med på /cars
             $('#exampleModalCenter').modal('hide');
             showCarPage();
         },
     });
- 
 }
 
 function showAddCar() {
@@ -67,37 +63,33 @@ function addCar() {
 
     const make = document.getElementById('make-input2').value;
     const model = document.getElementById('model-input2').value;
-    const customer_id = Math.floor(document.getElementById('customer_id-input2').value);
-
+    const user_id = Math.floor(document.getElementById('customer_id-input2').value);
 
     const data = {
-        make : make,
-        model : model,
-        customer_id : customer_id
+        make: make,
+        model: model,
+        user_id: user_id // Reflecting the model change
     };
 
     $.ajax({
         url: host + '/cars',
-        type: 'POST', // eller 'PUT', 'POST' eller 'DELETE'
+        type: 'POST',
         contentType: 'application/json',
         data: JSON.stringify(data),
         success: function(response) {
-           // cars innehåller nu den JSON-data som servern svarar med på /cars
            $('#addCarModal').modal('hide');
            showCarPage();
         },
     });
-    
 }
-
 
 function deleteCar(id) {
     $.ajax({
         url: host + '/cars/' + id,
-        type: 'DELETE', // eller 'PUT', 'POST' eller 'DELETE'
-        contentType: 'application/json',
+        type: 'DELETE',
         success: function(response) {
             alert("Bil med id " + id + " borttagen. \nVänligen ladda om listan.");
+            showCarPage(); // Refresh the list after deletion
         },
     });
 }
@@ -105,31 +97,26 @@ function deleteCar(id) {
 function present_cars() {
     $.get(host + '/cars', function(cars) {
         var carList = $("#car-list");
+        carList.empty(); // Clear the list before appending new items
 
         cars.forEach(function(car) {
-       
-        var customerName = car.customer ? car.customer.name : 'Ingen kund tilldelad';
+            // Updated to use 'user' instead of 'customer'
+            var userName = car.user ? car.user.name : 'Ingen användare tilldelad';
 
-        var listItem = $("<li>")
-            .addClass("car-item")
-            .html(`
-                <h3> Märke: ${car.make} </h3>
-                <h5> Modell: ${car.model}</h3>
-                <p>Kund: ${customerName}</p>
-                <button class="car-button edit-button" id="edit-button" onclick="editCar(${car.id})">Redigera</button>
-                <button class="car-button delete-button" id="delete-button" onclick="deleteCar(${car.id})">Ta bort</button>
-                <br>
-                <br>
-            `);
+            var listItem = $("<li>")
+                .addClass("car-item")
+                .html(`
+                    <h3> Märke: ${car.make} </h3>
+                    <h5> Modell: ${car.model}</h5>
+                    <p>Användare: ${userName}</p>
+                    <button class="car-button edit-button" onclick="editCar(${car.id})">Redigera</button>
+                    <button class="car-button delete-button" onclick="deleteCar(${car.id})">Ta bort</button>
+                `);
 
-        carList.append(listItem);
-
+            carList.append(listItem);
         });
-        
-    })  
-   
+    });
 }
-
 
 $(document).ready(function(){
    // Kod i detta block körs när dokumentet laddats klart.
