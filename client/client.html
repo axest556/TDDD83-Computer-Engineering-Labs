@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <link rel="stylesheet" href="client.css">
+
+    <title>iCar - drive fast!</title>
+  </head>
+  <body>
+
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar navbar-light bg-light">
+            <a class="navbar-brand" href="#">
+              <img src="iCar.png" width="60" height="60" alt="">
+            </a>
+
+        <a class="navbar-brand" href="#">iCar</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+      
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+          <ul class="navbar-nav mr-auto">
+            <li class="nav-item active">
+              <a class="nav-link" id="nav-home" href="#">Hem <span class="sr-only">(current)</span></a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" id="nav-contact" href="#">Kontakt</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="nav-cars" href="#">Bilar</a>
+            </li>
+          </ul>
+          <form class="form-inline my-2 my-lg-0">
+            <input class="form-control mr-sm-2" type="search" placeholder="Sök" aria-label="Sök">
+            <button class="btn btn-outline-primary" type="submit">Sök</button>
+          </form>
+        </div>
+      </nav>
+
+    <div class="container-fluid">
+    </div>
+
+    <script id="view-home" type="text/html">
+        <br>
+        <h1>Hej och välkommen till iCar!</h1>
+        <p>På denna sida kan du boka alla i-sektionens bilar. För att komma till bokningen av bilar, välj menyalternativet "boka" sedan välj bilden du önskar.</p>
+
+        <div class="container-fluid" id="leftbox">
+            <h3>Öppetider</h3>
+            <p id="sub">
+                Måndag-Fredag.......08-18</p>
+            <p id="sub">
+                Lördag......................10-16</p>
+            <p id="sub">
+                Söndag.....................Stängt</p>
+        </div>
+    </script>
+
+    <script id="view-contact" type="text/html">
+        <h1>Kontakuppgifter</h1>
+        <p>På denna sida ser du kontaktuppgifter till alla på vårt företag.</p>
+
+        
+        <div class="container-fluid" id="left">
+            <div class="container-fluid" id="leftbox">
+                <h3>Kontakt</h3>
+                <p id="header">
+                    Adress:</p>
+                <p id="sub">
+                    Campus Valla, Olaus Magnus väg, 583 30 Linköping</p>
+                <p id="header">
+                    Telefon:</p>
+                <p id="sub">
+                    +46 13 281 000</p>
+                <p id="header">
+                    Mail: </p>
+                <p id="sub">
+                    Icar@isektionen.se </p>
+            </div>
+        </div>
+
+        <div class="container-fluid" id="right">
+            <form id="contact-formula">
+                <div class="form-group">
+                    <label for="name-field">Namn</label>
+                    <input type="text" class="form-control" id="name-field" aria-describedby="name-help">
+                    <small id="name-help" class="form-text text-muted">Vi kommer aldrig dela ditt namn med andra.</small>
+                </div>
+                <div class="form-group">
+                    <label for="email-field">Email adress</label>
+                    <input type="email" class="form-control" id="email-field">
+                </div>
+                <div class="form-group">
+                    <label for="message-field">Meddelande</label>
+                    <textarea class="form-control" id="message-field" rows="3"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" id="submit-formula">Skicka</button>
+            </form>
+        </div>
+    </script>
+
+    <script id="view-cars" type="text/html" src = "server-stub.js">
+        <br>
+        <h1>Våra bilar</h1>
+        <ul id="car-list"></ul>
+        <br>
+        <button type="submit" class="btn btn-primary" id="reload-cars">Ladda om listan</button>
+        <button type="submit" class="btn btn-primary" id="add-car" onclick="showAddCar()">Lägg till en bil</button>
+
+    </script>
+
+    <div class="modal fade" id="exampleModalCenter" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="exampleModalCenterTitle">Redigera bil med id </h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+
+                <form id="edit-formula">
+                    <div class="form-group">
+                        <label>ID</label>
+                        <input type="text" class="form-control" id="car_id" disabled>
+                        <small id="name-help" class="form-text text-muted">Du kan inte ändra bilens ID.</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Märke</label>
+                        <input type="text" class="form-control" id="make-input">
+                    </div>
+                    <div class="form-group">
+                        <label>Model</label>
+                        <input type="text" class="form-control" id="model-input">
+                    </div>
+                    <div class="form-group">
+                        <label>Kund-id</label>
+                        <input type="text" class="form-control" id="customer_id-input">
+                    </div>
+                </form>
+
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Stäng</button>
+              <button type="button" class="btn btn-primary" id="SaveChanges" onclick="save()">Spara ändringar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+
+      <div class="modal fade" id="addCarModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="exampleModalCenterTitle">Lägg till en bil</h5>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+
+                <form id="edit-formula">
+                    <div class="form-group">
+                        <label>Märke</label>
+                        <input type="text" class="form-control" id="make-input2">
+                    </div>
+                    <div class="form-group">
+                        <label>Model</label>
+                        <input type="text" class="form-control" id="model-input2">
+                    </div>
+                    <div class="form-group">
+                        <label>Kund-id</label>
+                        <input type="text" class="form-control" id="customer_id-input2">
+                    </div>
+                </form>
+
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Stäng</button>
+              <button type="button" class="btn btn-primary" id="SaveChanges" onclick="addCar()">Spara ändringar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+
+
+
+
+    <!-- Optional JavaScript -->
+   
+
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.4.1/dist/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+
+    <script src="server-stub.js"></script>
+    <script src="client.js"></script>
+
+  </body>
+</html>
