@@ -1,4 +1,7 @@
 //client.js
+
+var host = window.location.protocol + '//' + location.host
+
 function loaded() {
     $(".container-fluid").html($("#view-home").html())
     alert("Sidan laddades");
@@ -13,12 +16,14 @@ function showCarPage() {
 function editCar(id) {
     $("#exampleModalCenter").modal();
 
-    var car = serverStub.getCar(id);
-
-    $("#car_id").val(car.id);
-    $("#make-input").val(car.make);
-    $("#model-input").val(car.model);
-    $("#customer_id-input").val(car.customer_id);
+    $.get(host + '/cars/' + id, function(car) {
+        // cars innehåller nu den JSON-data som servern svarar med på /cars
+        $("#car_id").val(car.id);
+        $("#make-input").val(car.make);
+        $("#model-input").val(car.model);
+        $("#customer_id-input").val(car.customer.id);
+     });
+   
 }
 
 function save() {
@@ -29,10 +34,24 @@ function save() {
     const model = document.getElementById('model-input').value;
     const customer_id = Math.floor(document.getElementById('customer_id-input').value);
     
-    serverStub.updateCar(id, make, model, customer_id);
+    const data = {
+        make : make,
+        model : model,
+        customer_id : customer_id// Ensure this matches your backend logic, might need to be just `customer` depending on how your Flask app is set up
+    };
 
-    $('#exampleModalCenter').modal('hide');
-    showCarPage();
+    $.ajax({
+        url: host + '/cars/' + id,
+        type: 'PUT', // eller 'PUT', 'POST' eller 'DELETE'
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function(response) {
+           // cars innehåller nu den JSON-data som servern svarar med på /cars
+            $('#exampleModalCenter').modal('hide');
+            showCarPage();
+        },
+    });
+ 
 }
 
 function showAddCar() {
@@ -50,42 +69,65 @@ function addCar() {
     const model = document.getElementById('model-input2').value;
     const customer_id = Math.floor(document.getElementById('customer_id-input2').value);
 
-    serverStub.addCar(make, model, customer_id);
+
+    const data = {
+        make : make,
+        model : model,
+        customer_id : customer_id
+    };
+
+    $.ajax({
+        url: host + '/cars',
+        type: 'POST', // eller 'PUT', 'POST' eller 'DELETE'
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function(response) {
+           // cars innehåller nu den JSON-data som servern svarar med på /cars
+           $('#addCarModal').modal('hide');
+           showCarPage();
+        },
+    });
     
-    $('#addCarModal').modal('hide');
-    showCarPage();
 }
 
 
 function deleteCar(id) {
-    alert("Bil " + serverStub.getCar(id).make + " borttagen. \nVänligen ladda om listan.");
-    serverStub.deleteCar(id);
-    //showCarPage();
+    $.ajax({
+        url: host + '/cars/' + id,
+        type: 'DELETE', // eller 'PUT', 'POST' eller 'DELETE'
+        contentType: 'application/json',
+        success: function(response) {
+            alert("Bil med id " + id + " borttagen. \nVänligen ladda om listan.");
+        },
+    });
 }
 
 function present_cars() {
-   var cars = serverStub.getCars();
-   var carList = $("#car-list");
+    $.get(host + '/cars', function(cars) {
+        var carList = $("#car-list");
 
-    cars.forEach(function(car) {
-    var customer = car.customer_id ? serverStub.getCustomer(car.customer_id) : null;
-    var customerName = customer ? customer.name : 'Ingen kund tilldelad';
+        cars.forEach(function(car) {
+       
+        var customerName = car.customer ? car.customer.name : 'Ingen kund tilldelad';
 
-    var listItem = $("<li>")
-        .addClass("car-item")
-        .html(`
-            <h3> Märke: ${car.make} </h3>
-            <h5> Modell: ${car.model}</h3>
-            <p>Kund: ${customerName}</p>
-            <button class="car-button edit-button" id="edit-button" onclick="editCar(${car.id})">Redigera</button>
-            <button class="car-button delete-button" id="delete-button" onclick="deleteCar(${car.id})">Ta bort</button>
-            <br>
-            <br>
-        `);
+        var listItem = $("<li>")
+            .addClass("car-item")
+            .html(`
+                <h3> Märke: ${car.make} </h3>
+                <h5> Modell: ${car.model}</h3>
+                <p>Kund: ${customerName}</p>
+                <button class="car-button edit-button" id="edit-button" onclick="editCar(${car.id})">Redigera</button>
+                <button class="car-button delete-button" id="delete-button" onclick="deleteCar(${car.id})">Ta bort</button>
+                <br>
+                <br>
+            `);
 
         carList.append(listItem);
 
-    });
+        });
+        
+    })  
+   
 }
 
 
