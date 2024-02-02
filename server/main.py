@@ -2,19 +2,24 @@
 from flask import abort, Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
+from flask_jwt_extended import JWTManager
+from flask_jwt_extended import create_access_token
+from flask_jwt_extended import jwt_required
+from flask_jwt_extended import get_jwt_identity
+
 
 
 app = Flask(__name__, static_folder='../client', static_url_path='/')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['JWT_SECRET_KEY'] = 'your_very_complex_string_here'
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
+jwt = JWTManager(app)
 
 @app.route("/")
 def client():
     return app.send_static_file("client.html")
-
-
 
 class Car(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -57,6 +62,7 @@ class User(db.Model):
         self.password_hash = bcrypt.generate_password_hash(password).decode('utf8')
 
 @app.route('/cars', methods=['GET', 'POST'])
+@jwt_required()
 def cars():
     if request.method == 'GET':
         all_cars = Car.query.all()
@@ -73,6 +79,7 @@ def cars():
         return jsonify(new_car.serialize()), 201
 
 @app.route('/cars/<int:car_id>', methods=['GET', 'PUT', 'DELETE'])
+@jwt_required()
 def handle_car(car_id):
     car = Car.query.get(car_id)
     if car is None:
@@ -96,6 +103,7 @@ def handle_car(car_id):
         return '', 200
 
 @app.route('/users', methods=['GET', 'POST'])
+@jwt_required()
 def users():
     if request.method == 'GET':
         all_users = User.query.all()
@@ -108,6 +116,7 @@ def users():
         return jsonify(new_user.serialize()), 201
 
 @app.route('/users/<int:user_id>', methods=['GET', 'PUT', 'DELETE'])
+@jwt_required()
 def handle_users(user_id):
     user = User.query.get(user_id)
     if user is None:
@@ -128,6 +137,7 @@ def handle_users(user_id):
         return '', 200
 
 @app.route('/users/<int:user_id>/cars')
+@jwt_required()
 def get_cars(user_id):
     user = User.query.get(user_id)
     if user is None:
@@ -142,11 +152,26 @@ def signup():
 
     password = data['password']
 
-    password_hash = new_user.set_password(password)
+    new_user.set_password(password)
 
     db.session.add(new_user)
     db.session.commit()
     return jsonify({'message': 'User created successfully'}), 201
+
+@app.route('/login', methods = ['POST'])
+def login():
+    data = request.get_json()
+
+    if not data or not data.get('email') or not data.get('password'):
+        return jsonify({'msg': 'Missing email or password'}), 400
+    
+    user = User.query.filter_by(email=data['email']).first()
+
+    if user and bcrypt.check_password_hash(user.password_hash, data['password']):
+        access_token = create_access_token(identity=user.id)
+        return jsonify({"token": access_token, "user": user.serialize()}), 200    
+    else:
+        return jsonify({'msg': 'Invalid email or password'}), 401
 
 
 if __name__ == "__main__":
