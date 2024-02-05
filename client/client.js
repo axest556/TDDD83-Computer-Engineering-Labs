@@ -2,6 +2,7 @@
 var host = window.location.protocol + '//' + location.host
 
 function loaded() {
+    checkAuthenticationStatus();
     $(".container-fluid").html($("#view-home").html());
     alert("Sidan laddades");
 }
@@ -118,6 +119,63 @@ function present_cars() {
     });
 }
 
+function checkAuthenticationStatus() {
+    var authenticationData = JSON.parse(sessionStorage.getItem('auth'));
+    if (authenticationData) {
+        $("#nav-login").hide();
+        $("#nav-register").hide();
+        $("#nav-logout").show();
+    } else {
+        $("#nav-login").show();
+        $("#nav-register").show();
+        $("#nav-logout").hide();
+    }
+
+}
+
+$(document).on('submit', '#registration-form', function(e) {
+    e.preventDefault(); 
+
+    var userData = {
+        name: $('#name-field').val(),
+        email: $('#email-field').val(),
+        password: $('#password-field').val()
+    };
+
+    $.ajax({
+        type: 'POST',
+        url: host + '/sign-up',
+        contentType: 'application/json',
+        data: JSON.stringify(userData),
+        success: function(response) {
+            alert("Profil skapad.");
+            $(".container-fluid").html($("#view-home").html());
+        }
+    });
+});
+
+$(document).on('submit', '#login-form', function(e) {
+    e.preventDefault(); 
+
+    var loginData = {
+        email: $('#email-field').val(),
+        password: $('#password-field').val()
+    };
+
+    $.ajax({
+        type: 'POST',
+        url: host + '/login',
+        contentType: 'application/json',
+        data: JSON.stringify(loginData),
+        success: function(response) {
+            sessionStorage.setItem('auth', JSON.stringify(response));
+            alert("Inloggad");
+            checkAuthenticationStatus();
+            $(".container-fluid").html($("#view-home").html());
+        }
+    });
+});
+
 $(document).ready(function(){
    // Kod i detta block körs när dokumentet laddats klart.
    loaded();
@@ -135,6 +193,24 @@ $(document).ready(function(){
     $('#nav-cars').click(function (e) {
         e.preventDefault();
         showCarPage();
+    });
+
+    $('#nav-register').click(function (e) {
+        e.preventDefault();
+        $(".container-fluid").html($("#view-register").html());
+    });
+
+    $('#nav-login').click(function (e) {
+        e.preventDefault();
+        $(".container-fluid").html($("#view-login").html());
+    });
+
+    $('#nav-logout').click(function (e) {
+        e.preventDefault();
+        sessionStorage.removeItem('auth');
+        alert("Du är utloggad.");
+        checkAuthenticationStatus();
+        $(".container-fluid").html($("#view-home").html());
     });
 
     $(document).on('click', '#reload-cars', function (e) {
