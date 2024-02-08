@@ -101,6 +101,27 @@ def handle_car(car_id):
         db.session.delete(car)
         db.session.commit()
         return '', 200
+    
+@app.route('/cars/<int:car_id>/booking', methods=['POST', 'PUT'])
+@jwt_required()
+def handleBooking(car_id):
+    car = Car.query.get(car_id)
+
+    if request.method == 'POST':    
+        user_id = get_jwt_identity()
+        user = User.query.get(user_id)
+        if user and car.user is None:
+            car.user = user
+            db.session.commit()
+            return jsonify(True), 200
+        return jsonify(False), 200
+    
+    if request.method == 'PUT':
+        user_id = get_jwt_identity()
+        car.user = None
+        db.session.commit()
+        return jsonify(True), 200
+        
 
 @app.route('/users', methods=['GET', 'POST'])
 @jwt_required()
@@ -129,6 +150,8 @@ def handle_users(user_id):
             user.name = data['name']
         if 'email' in data:
             user.email = data['email']
+        if 'is_admin' in data:
+            user.is_admin = data['is_admin']
         db.session.commit()
         return jsonify(user.serialize()), 200
     elif request.method == 'DELETE':

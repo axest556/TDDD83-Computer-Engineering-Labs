@@ -1,4 +1,3 @@
-
 var host = window.location.protocol + '//' + location.host
 
 function loaded() {
@@ -15,12 +14,16 @@ function showCarPage() {
 function editCar(id) {
     $("#exampleModalCenter").modal();
 
-    $.get(host + '/cars/' + id, function(car) {
-        $("#car_id").val(car.id);
-        $("#make-input").val(car.make);
-        $("#model-input").val(car.model);
-        // Updated to use 'user.id' instead of 'customer.id'
-        $("#customer_id-input").val(car.user ? car.user.id : '');
+    $.ajax({
+        type: 'GET',
+        url: host + '/cars/' + id,
+        headers: {"Authorization": "Bearer " + JSON.parse(sessionStorage.getItem('auth')).token},
+        success: function(car) {
+            $("#car_id").val(car.id);
+            $("#make-input").val(car.make);
+            $("#model-input").val(car.model);
+            $("#customer_id-input").val(car.user ? car.user.id : '');
+        },
     });
 }
 
@@ -30,19 +33,19 @@ function save() {
     const id = Math.floor(document.getElementById('car_id').value);
     const make = document.getElementById('make-input').value;
     const model = document.getElementById('model-input').value;
-    // Updated to reflect the model change
     const user_id = Math.floor(document.getElementById('customer_id-input').value);
     
     const data = {
         make: make,
         model: model,
-        user_id: user_id // Reflecting the backend expectation
+        user_id: user_id 
     };
 
     $.ajax({
         url: host + '/cars/' + id,
         type: 'PUT',
         contentType: 'application/json',
+        headers: {"Authorization": "Bearer " + JSON.parse(sessionStorage.getItem('auth')).token},
         data: JSON.stringify(data),
         success: function(response) {
             $('#exampleModalCenter').modal('hide');
@@ -69,13 +72,14 @@ function addCar() {
     const data = {
         make: make,
         model: model,
-        user_id: user_id // Reflecting the model change
+        user_id: user_id 
     };
 
     $.ajax({
         url: host + '/cars',
         type: 'POST',
         contentType: 'application/json',
+        headers: {"Authorization": "Bearer " + JSON.parse(sessionStorage.getItem('auth')).token},
         data: JSON.stringify(data),
         success: function(response) {
            $('#addCarModal').modal('hide');
@@ -88,35 +92,95 @@ function deleteCar(id) {
     $.ajax({
         url: host + '/cars/' + id,
         type: 'DELETE',
+        headers: {"Authorization": "Bearer " + JSON.parse(sessionStorage.getItem('auth')).token},
         success: function(response) {
             alert("Bil med id " + id + " borttagen. \nVänligen ladda om listan.");
-            showCarPage(); // Refresh the list after deletion
+        },
+    });
+}
+
+function bookCar(id) {
+
+    $.ajax({
+        url: host + '/cars/' + id + '/booking',
+        type: 'POST',
+        contentType: 'application/json',
+        headers: {"Authorization": "Bearer " + JSON.parse(sessionStorage.getItem('auth')).token},
+        success: function(response) {
+            alert();
+            showCarPage();
+        },
+    });
+}
+
+function unbookCar(id) {
+
+    $.ajax({
+        url: host + '/cars/' + id + '/booking',
+        type: 'PUT',
+        contentType: 'application/json',
+        headers: {"Authorization": "Bearer " + JSON.parse(sessionStorage.getItem('auth')).token},
+        success: function(response) {
+            alert("Bilen är avbokad");
+            showCarPage();
         },
     });
 }
 
 function present_cars() {
-    $.get(host + '/cars', function(cars) {
-        var carList = $("#car-list");
-        carList.empty(); // Clear the list before appending new items
 
-        cars.forEach(function(car) {
-            // Updated to use 'user' instead of 'customer'
-            var userName = car.user ? car.user.name : 'Ingen användare tilldelad';
+    $.ajax({
+        type: 'GET',
+        url: host + '/cars',
+        headers: {"Authorization": "Bearer " + JSON.parse(sessionStorage.getItem('auth')).token},
+        success: function(cars) {
+            var carList = $("#car-list");
+            carList.empty(); 
+            var currentUserId = JSON.parse(sessionStorage.getItem('auth')).user.id; 
+            
+            //alert(currentUserId);
 
-            var listItem = $("<li>")
-                .addClass("car-item")
-                .html(`
-                    <h3> Märke: ${car.make} </h3>
-                    <h5> Modell: ${car.model}</h5>
-                    <p>Användare: ${userName}</p>
-                    <button class="car-button edit-button" onclick="editCar(${car.id})">Redigera</button>
-                    <button class="car-button delete-button" onclick="deleteCar(${car.id})">Ta bort</button>
-                `);
+            cars.forEach(function(car) {
+                // if (car.user && car.user.id) {
+                //     alert(car.user.id);
+                // }
+                var userName = car.user ? car.user.name : 'Ingen användare tilldelad';
+                var listItem = $("<li>")
+                    .addClass("car-item")
+                    .html(`
+                        <h3> Märke: ${car.make} </h3>
+                        <h5> Modell: ${car.model}</h5>
+                        <p id = "user_id_id">Bokad av: ${userName}</p>
+                        <button class="car-button edit-button" onclick="editCar(${car.id})">Redigera</button>
+                        <button class="car-button delete-button" onclick="deleteCar(${car.id})">Ta bort</button>
+                        <button class="car-button book-button" onclick="bookCar(${car.id})">Boka</button>
+                        <button class="car-button unbook-button" onclick="unbookCar(${car.id})">Avboka</button>
+                    `);
 
-            carList.append(listItem);
-        });
+                if (JSON.parse(sessionStorage.getItem('auth')).user.is_admin) {
+                    listItem.find('.edit-button, .delete-button').show();
+                    listItem.find('.book-button').hide();
+                } else {
+                    listItem.find('.edit-button, .delete-button').hide();
+                    if (userName != 'Ingen användare tilldelad') {
+                        listItem.find('#user_id_id').show();
+                        listItem.find('.book-button').hide();
+                        if (car.user && car.user.id === currentUserId) {
+                            listItem.find('.unbook-button').show();
+                        } else {
+                            listItem.find('.unbook-button').hide();
+                        }
+                    } else {
+                        listItem.find('.book-button').show();
+                        listItem.find('#user_id_id').hide();
+                        listItem.find('.unbook-button').hide();
+                    }
+                }
+                carList.append(listItem);
+            });          
+        }
     });
+
 }
 
 function checkAuthenticationStatus() {
@@ -125,10 +189,12 @@ function checkAuthenticationStatus() {
         $("#nav-login").hide();
         $("#nav-register").hide();
         $("#nav-logout").show();
+        $("#nav-cars").show();
     } else {
         $("#nav-login").show();
         $("#nav-register").show();
         $("#nav-logout").hide();
+        $("#nav-cars").hide();
     }
 
 }
