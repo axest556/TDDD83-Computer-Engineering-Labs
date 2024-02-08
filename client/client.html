@@ -35,6 +35,15 @@
             <li class="nav-item">
                 <a class="nav-link" id="nav-cars" href="#">Bilar</a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link" id="nav-register" href="#">Registrera dig</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="nav-login" href="#">Logga in</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="nav-logout" href="#">Logga ut</a>
+            </li>
           </ul>
           <form class="form-inline my-2 my-lg-0">
             <input class="form-control mr-sm-2" type="search" placeholder="Sök" aria-label="Sök">
@@ -63,6 +72,7 @@
     </script>
 
     <script id="view-contact" type="text/html">
+        <br>
         <h1>Kontakuppgifter</h1>
         <p>På denna sida ser du kontaktuppgifter till alla på vårt företag.</p>
 
@@ -192,11 +202,53 @@
         </div>
       </div>
 
+      <script id="view-register" type="text/html">
+        <br>
+        <h1>Registrera dig</h1>
+        <p>På denna sida kan du registrera dig genom att fylla i formuläret nedan.</p>
+    
+        <div class="container-fluid">
+            <form id="registration-form">
+                <div class="form-group">
+                    <label for="name-field">Namn</label>
+                    <input type="text" class="form-control" id="name-field" aria-describedby="name-help">
+                    <small id="name-help" class="form-text text-muted">Vi kommer aldrig dela ditt namn med andra.</small>
+                </div>
+                <div class="form-group">
+                    <label for="email-field">Email adress</label>
+                    <input type="email" class="form-control" id="email-field">
+                </div>
+                <div class="form-group">
+                    <label for="password-field">Lösenord:</label>
+                    <input type="password" class="form-control" id="password-field">
+                </div>
+                <button type="submit" class="btn btn-primary">Spara ändringar</button>
+            </form>
+        </div>
+    </script>
+
+    <script id="view-login" type="text/html">
+        <br>
+        <h1>Logga in</h1>
+        <p>På denna sida kan du logga in genom att fylla i formuläret nedan.</p>
+    
+        <div class="container-fluid">
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="email-field">Email adress</label>
+                    <input type="email" class="form-control" id="email-field">
+                </div>
+                <div class="form-group">
+                    <label for="password-field">Lösenord:</label>
+                    <input type="password" class="form-control" id="password-field">
+                </div>
+                <button type="submit" class="btn btn-primary">Logga in</button>
+            </form>
+        </div>
+    </script>
 
 
 
-
-    <!-- Optional JavaScript -->
    
 
     <!-- jQuery first, then Popper.js, then Bootstrap JS -->

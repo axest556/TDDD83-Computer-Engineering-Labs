@@ -1,163 +1,201 @@
- #!/usr/bin/env python3
-from flask import abort
-from flask import Flask
-from flask import jsonify
+#!/usr/bin/env python3
+from flask import abort, Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
-from flask import request
+from flask_bcrypt import Bcrypt
+from flask_jwt_extended import JWTManager
+from flask_jwt_extended import create_access_token
+from flask_jwt_extended import jwt_required
+from flask_jwt_extended import get_jwt_identity
+
+
 
 app = Flask(__name__, static_folder='../client', static_url_path='/')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['JWT_SECRET_KEY'] = 'your_very_complex_string_here'
 db = SQLAlchemy(app)
-
-#lab2 nedan
+bcrypt = Bcrypt(app)
+jwt = JWTManager(app)
 
 @app.route("/")
 def client():
-  return app.send_static_file("client.html")
-
-#lab2 ovan
-
-#Lab 1 nedan
+    return app.send_static_file("client.html")
 
 class Car(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     make = db.Column(db.String, nullable=False)
     model = db.Column(db.String, nullable=False)
-    customer_id = db.Column(db.Integer, db.ForeignKey('customer.id'), nullable=True)  # Foreign key to Customer
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
 
     def __repr__(self):
-        return '<Car {}: {} {} '.format(self.id, self.make, self.model)
+        return f'<Car {self.id}: {self.make} {self.model}>'
   
     def serialize(self):
-       customer_data = self.customer.serialize() if self.customer else None
-       return {
+        user_data = self.user.serialize() if self.user else None
+        return {
             'id': self.id,
             'make': self.make,
             'model': self.model,
-            'customer': customer_data
+            'user': user_data
         }
 
-
-@app.route('/cars', methods=['GET', 'POST'])
-def cars():
-  if request.method == 'GET':
-        all_cars = Car.query.all()
-        car_list = [car.serialize() for car in all_cars]
-        return jsonify(car_list)
-  elif request.method == 'POST':
-        data = request.get_json()  # Get data from request body
-
-        new_car = Car(make=data['make'], model=data['model'])
-
-        if 'customer_id' in data:
-            customer = Customer.query.get(data['customer_id'])
-            if customer:
-                new_car.customer = customer
-
-        db.session.add(new_car)
-        db.session.commit()
-
-        return jsonify(new_car.serialize()), 201  
-
-
-@app.route('/cars/<int:car_id>', methods=['GET', 'PUT', 'DELETE'])    
-def handle_car(car_id):
-    car = Car.query.get(car_id)
-    if car is None:
-        abort(404)  
-    
-    if request.method == 'GET':   
-        return jsonify(car.serialize())  
-    elif request.method == "PUT":
-        data = request.get_json()
-
-        if 'make' in data:
-            car.make = data['make']
-        if 'model' in data:
-            car.model = data['model']
-        if 'customer_id' in data:
-            customer = Customer.query.get(data['customer_id'])
-            car.customer = customer if customer else abort(404)
-
-        db.session.commit()
-        return jsonify(car.serialize()), 200
-    elif request.method == 'DELETE':
-        db.session.delete(car)
-        db.session.commit()
-        return '', 200  
-
-
-class Customer(db.Model):
+class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, nullable=False)
     email = db.Column(db.String, nullable=False)
-    cars = db.relationship('Car', backref='customer', lazy=True)
+    is_admin = db.Column(db.Boolean, default=False)
+    password_hash = db.Column(db.String, nullable=False)
+    cars = db.relationship('Car', backref='user', lazy=True)
 
     def __repr__(self):
-     return '<Customer {}: {} {}'.format(self.id, self.name, self.email)
+        return f'<User {self.id}: {self.name} {self.email}>'
   
     def serialize(self):
         return {
             'id': self.id,
             'name': self.name,
-            'email': self.email
+            'email': self.email,
+            'is_admin': self.is_admin
         }
-
-
-@app.route('/customers', methods=['GET', 'POST'])
-def customers():
-    if request.method == 'GET':
-        all_customers = Customer.query.all()
-        customer_list = [customer.serialize() for customer in all_customers]
-        return jsonify(customer_list)
-    elif request.method == 'POST':
-        data = request.get_json()  # Get data from request body
-
-        new_customer = Customer(name=data['name'], email=data['email'])
-        db.session.add(new_customer)
-        db.session.commit()
-
-        return jsonify(new_customer.serialize()), 201  
-
-
-@app.route('/customers/<int:customer_id>', methods=['GET', 'PUT', 'DELETE'])    
-def handle_customers(customer_id):
-    customer = Customer.query.get(customer_id)
-    if customer is None:
-        abort(404)  
     
-    if request.method == 'GET':   
-        return jsonify(customer.serialize())  
-    elif request.method == "PUT":
+    def set_password(self, password):
+        self.password_hash = bcrypt.generate_password_hash(password).decode('utf8')
+
+@app.route('/cars', methods=['GET', 'POST'])
+@jwt_required()
+def cars():
+    if request.method == 'GET':
+        all_cars = Car.query.all()
+        return jsonify([car.serialize() for car in all_cars])
+    elif request.method == 'POST':
         data = request.get_json()
-
-        if 'name' in data:
-            customer.name = data['name']
-        if 'email' in data:
-            customer.email = data['email']
-
+        new_car = Car(make=data['make'], model=data['model'])
+        if 'user_id' in data:
+            user = User.query.get(data['user_id'])
+            if user:
+                new_car.user = user
+        db.session.add(new_car)
         db.session.commit()
-        return jsonify(customer.serialize()), 200
+        return jsonify(new_car.serialize()), 201
+
+@app.route('/cars/<int:car_id>', methods=['GET', 'PUT', 'DELETE'])
+@jwt_required()
+def handle_car(car_id):
+    car = Car.query.get(car_id)
+    if car is None:
+        abort(404)
+    if request.method == 'GET':
+        return jsonify(car.serialize())
+    elif request.method == 'PUT':
+        data = request.get_json()
+        if 'make' in data:
+            car.make = data['make']
+        if 'model' in data:
+            car.model = data['model']
+        if 'user_id' in data:
+            user = User.query.get(data['user_id'])
+            car.user = user if user else abort(404)
+        db.session.commit()
+        return jsonify(car.serialize()), 200
     elif request.method == 'DELETE':
-        db.session.delete(customer)
+        db.session.delete(car)
+        db.session.commit()
+        return '', 200
+    
+@app.route('/cars/<int:car_id>/booking', methods=['POST', 'PUT'])
+@jwt_required()
+def handleBooking(car_id):
+    car = Car.query.get(car_id)
+
+    if request.method == 'POST':    
+        user_id = get_jwt_identity()
+        user = User.query.get(user_id)
+        if user and car.user is None:
+            car.user = user
+            db.session.commit()
+            return jsonify(True), 200
+        return jsonify(False), 200
+    
+    if request.method == 'PUT':
+        user_id = get_jwt_identity()
+        car.user = None
+        db.session.commit()
+        return jsonify(True), 200
+        
+
+@app.route('/users', methods=['GET', 'POST'])
+@jwt_required()
+def users():
+    if request.method == 'GET':
+        all_users = User.query.all()
+        return jsonify([user.serialize() for user in all_users])
+    elif request.method == 'POST':
+        data = request.get_json()
+        new_user = User(name=data['name'], email=data['email'])
+        db.session.add(new_user)
+        db.session.commit()
+        return jsonify(new_user.serialize()), 201
+
+@app.route('/users/<int:user_id>', methods=['GET', 'PUT', 'DELETE'])
+@jwt_required()
+def handle_users(user_id):
+    user = User.query.get(user_id)
+    if user is None:
+        abort(404)
+    if request.method == 'GET':
+        return jsonify(user.serialize())
+    elif request.method == 'PUT':
+        data = request.get_json()
+        if 'name' in data:
+            user.name = data['name']
+        if 'email' in data:
+            user.email = data['email']
+        if 'is_admin' in data:
+            user.is_admin = data['is_admin']
+        db.session.commit()
+        return jsonify(user.serialize()), 200
+    elif request.method == 'DELETE':
+        db.session.delete(user)
         db.session.commit()
         return '', 200
 
-
-@app.route('/customers/<int:customer_id>/cars')
-def get_cars(customer_id):
-    customer = Customer.query.get(customer_id)    
-    if customer is None:
+@app.route('/users/<int:user_id>/cars')
+@jwt_required()
+def get_cars(user_id):
+    user = User.query.get(user_id)
+    if user is None:
         abort(404)
+    return jsonify([car.serialize() for car in user.cars])
 
-    all_cars = customer.cars
-    car_list = [{'id': car.id, 'make': car.make, 'model': car.model} for car in all_cars]
-    return jsonify(car_list)
+@app.route('/sign-up', methods=['POST'])
+def signup():
+    data = request.get_json()
 
-# Lab 1 ovan
+    new_user = User(name=data['name'], email=data['email'])
 
-if __name__ == "__main__":  
-    app.run(port=5002, debug=True) # På MacOS, byt till 5001 eller dylikt
+    password = data['password']
+
+    new_user.set_password(password)
+
+    db.session.add(new_user)
+    db.session.commit()
+    return jsonify({'message': 'User created successfully'}), 201
+
+@app.route('/login', methods = ['POST'])
+def login():
+    data = request.get_json()
+
+    if not data or not data.get('email') or not data.get('password'):
+        return jsonify({'msg': 'Missing email or password'}), 400
+    
+    user = User.query.filter_by(email=data['email']).first()
+
+    if user and bcrypt.check_password_hash(user.password_hash, data['password']):
+        access_token = create_access_token(identity=user.id)
+        return jsonify({"token": access_token, "user": user.serialize()}), 200    
+    else:
+        return jsonify({'msg': 'Invalid email or password'}), 401
 
 
+if __name__ == "__main__":
+    app.run(port=5002, debug=True)
